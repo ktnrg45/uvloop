@@ -67,11 +67,6 @@ cdef extern from "pthread.h":
         void (*child)())
 
 
-cdef extern from "includes/compat.h" nogil:
-
-    object MakeUnixSockPyAddr(sockaddr_un *addr)
-
-
 cdef extern from "includes/fork_handler.h":
 
     ctypedef void (*OnForkHandler)()

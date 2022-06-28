@@ -80,7 +80,8 @@ cdef class UVProcess(UVHandle):
             __forking_loop = loop
             system.setForkHandler(<system.OnForkHandler>&__get_fork_handler)
 
-            PyOS_BeforeFork()
+            IF UNAME_SYSNAME != "Windows":
+                PyOS_BeforeFork()
 
             err = uv.uv_spawn(loop.uvloop,
                               <uv.uv_process_t*>self._handle,
@@ -91,7 +92,8 @@ cdef class UVProcess(UVHandle):
             system.resetForkHandler()
             loop.active_process_handler = None
 
-            PyOS_AfterFork_Parent()
+            IF UNAME_SYSNAME != "Windows":
+                PyOS_AfterFork_Parent()
 
             if err < 0:
                 self._close_process_handle()
@@ -173,7 +175,8 @@ cdef class UVProcess(UVHandle):
         if self._restore_signals:
             _Py_RestoreSignals()
 
-        PyOS_AfterFork_Child()
+        IF UNAME_SYSNAME != "Windows":
+            PyOS_AfterFork_Child()
 
         err = uv.uv_loop_fork(self._loop.uvloop)
         if err < 0:

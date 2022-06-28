@@ -40,19 +40,21 @@ cdef extern from "winsock2.h" nogil:
                    const void *option_value, int option_len)
 
 
-cdef extern from "unistd.h" nogil:
-
-    ssize_t write(int fd, const void *buf, size_t count)
-    void _exit(int status)
-
-
-cdef extern from "pthread.h":
-
+cdef extern from *:
+    # libuv doesn't seem to need this
+    """
     int pthread_atfork(
         void (*prepare)(),
         void (*parent)(),
         void (*child)())
-
+    {
+        return 0;
+    }
+    """
+    int pthread_atfork(
+        void (*prepare)(),
+        void (*parent)(),
+        void (*child)())
 
 cdef extern from "includes/fork_handler.h":
 
@@ -60,3 +62,16 @@ cdef extern from "includes/fork_handler.h":
     void handleAtFork()
     void setForkHandler(OnForkHandler handler)
     void resetForkHandler()
+
+cdef extern from "includes/compat.h" nogil:
+
+    # Only here for compiling
+    struct sockaddr_un:
+        unsigned short sun_family
+        char*          sun_path
+        # ...
+
+    cdef int socketpair(int domain, int type, int protocol, int socket_vector[2])
+
+    ssize_t write(int fd, const void *buf, size_t count)
+    void _exit(int status)

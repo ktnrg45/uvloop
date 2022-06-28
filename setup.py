@@ -282,8 +282,11 @@ class uvloop_build_ext(build_ext):
             self.compiler.add_library('kvm')
         elif sys.platform.startswith('sunos'):
             self.compiler.add_library('kstat')
+        elif sys.platform == "win32":
+            self.compiler.add_library("ws2_32")
 
-        self.compiler.add_library('pthread')
+        if sys.platform != "win32":
+            self.compiler.add_library('pthread')
 
         super().build_extensions()
 
@@ -309,7 +312,6 @@ if not (_ROOT / 'uvloop' / 'loop.c').exists() or '--cython-always' in sys.argv:
     # No Cython output, require Cython to build.
     setup_requires.append(CYTHON_DEPENDENCY)
 
-
 setup(
     name='uvloop',
     description='Fast implementation of asyncio event loop on top of libuv',
@@ -331,7 +333,7 @@ setup(
             sources=[
                 "uvloop/loop.pyx",
             ],
-            extra_compile_args=CFLAGS
+            extra_compile_args=CFLAGS,
         ),
     ],
     classifiers=[

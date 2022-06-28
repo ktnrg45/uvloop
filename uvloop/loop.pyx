@@ -1,6 +1,7 @@
 # cython: language_level=3, embedsignature=True
 
 import asyncio
+import sys
 cimport cython
 
 from .includes.debug cimport UVLOOP_DEBUG
@@ -18,10 +19,13 @@ from .includes.python cimport (
     Context_Exit,
     PyMemoryView_FromMemory, PyBUF_WRITE,
     PyMemoryView_FromObject, PyMemoryView_Check,
-    PyOS_AfterFork_Parent, PyOS_AfterFork_Child,
-    PyOS_BeforeFork,
     PyUnicode_FromString
 )
+IF UNAME_SYSNAME != "Windows":
+    from .includes.python cimport (
+        PyOS_AfterFork_Parent, PyOS_AfterFork_Child,
+        PyOS_BeforeFork,
+    )
 from .includes.flowcontrol cimport add_flowcontrol_defaults
 
 from libc.stdint cimport uint64_t
@@ -1760,6 +1764,8 @@ cdef class Loop:
                         if reuse_address:
                             sock.setsockopt(uv.SOL_SOCKET, uv.SO_REUSEADDR, 1)
                         if reuse_port:
+                            if sys.platform == "win32":
+                                raise RuntimeError("SO_REUSEPORT is not defined")
                             sock.setsockopt(uv.SOL_SOCKET, uv.SO_REUSEPORT, 1)
                         # Disable IPv4/IPv6 dual stack support (enabled by
                         # default on Linux) which makes a single socket
