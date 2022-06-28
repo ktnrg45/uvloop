@@ -1,7 +1,5 @@
 #include <errno.h>
 #include <stddef.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include "Python.h"
 #include "uv.h"
 
@@ -10,10 +8,25 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+
+#ifdef _WIN32
+#define PLATFORM_IS_WINDOWS 1
+#include <winsock2.h>
+#else
+#define PLATFORM_IS_WINDOWS 0
+#endif
+
+
 #ifdef __APPLE__
 #define PLATFORM_IS_APPLE 1
 #else
 #define PLATFORM_IS_APPLE 0
+#endif
+
+
+#if defined(__APPLE__) || defined(__linux__)
+#  include <sys/socket.h>
+#  include <sys/un.h>
 #endif
 
 
@@ -22,6 +35,9 @@
 #  include <sys/epoll.h>
 #else
 #  define PLATFORM_IS_LINUX 0
+#endif
+
+#ifdef __APPLE__
 #  define EPOLL_CTL_DEL 2
 struct epoll_event {};
 int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event) {
@@ -30,6 +46,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event) {
 #endif
 
 
+#if defined(__APPLE__) || defined(__linux__)
 PyObject *
 MakeUnixSockPyAddr(struct sockaddr_un *addr)
 {
@@ -38,6 +55,7 @@ MakeUnixSockPyAddr(struct sockaddr_un *addr)
             PyExc_ValueError, "a UNIX socket addr was expected");
         return NULL;
     }
+#endif
 
 #ifdef __linux__
     int addrlen = sizeof (struct sockaddr_un);
