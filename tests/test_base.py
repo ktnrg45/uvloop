@@ -1,5 +1,4 @@
 import asyncio
-import fcntl
 import logging
 import os
 import random
@@ -9,6 +8,8 @@ import time
 import uvloop
 import unittest
 import weakref
+if sys.platform != "win32":
+    import fcntl
 
 from unittest import mock
 from uvloop._testbase import UVTestCase, AIOTestCase
@@ -763,6 +764,7 @@ class TestBaseUV(_TestBase, UVTestCase):
         self.run_loop_briefly(delay=0.05)
         self.assertFalse(handle.cancelled())
 
+    @unittest.skipUnless('fcntl' in sys.modules, 'fcntl not available')
     def test_loop_std_files_cloexec(self):
         # See https://github.com/MagicStack/uvloop/issues/40 for details.
         for fd in {0, 1, 2}:
