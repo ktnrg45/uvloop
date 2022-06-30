@@ -13,6 +13,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <stdio.h>
+#define SO_REUSEPORT -1
+#define SIGCHLD -1
 int socketpair(int domain, int type, int protocol, int socket_vector[2])
 {
     PyErr_SetString(PyExc_RuntimeError, "Windows does not support socketpair");

@@ -13,11 +13,7 @@ from . cimport system
 cdef enum:
     UV_INTERNAL_HANDLE_READABLE = 0x00004000
 
-IF UNAME_SYSNAME == "Windows":
-    cdef int SO_REUSEPORT = -1
-    cdef int SIGCHLD = -1
-
-cdef extern from "uv.h" nogil:
+cdef extern from "includes/compat.h" nogil:
     cdef int UV_TCP_IPV6ONLY
 
     cdef int UV_EACCES
@@ -60,8 +56,7 @@ cdef extern from "uv.h" nogil:
     cdef int SOL_SOCKET
     cdef int SO_ERROR
     cdef int SO_REUSEADDR
-    IF UNAME_SYSNAME != "Windows":
-        cdef int SO_REUSEPORT
+    cdef int SO_REUSEPORT
     cdef int AF_INET
     cdef int AF_INET6
     cdef int AF_UNIX
@@ -77,8 +72,7 @@ cdef extern from "uv.h" nogil:
 
     cdef int SIGINT
     cdef int SIGHUP
-    IF UNAME_SYSNAME != "Windows":
-        cdef int SIGCHLD
+    cdef int SIGCHLD
     cdef int SIGKILL
     cdef int SIGTERM
 
