@@ -313,12 +313,14 @@ class AIOTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-        watcher = asyncio.SafeChildWatcher()
-        watcher.attach_loop(self.loop)
-        asyncio.set_child_watcher(watcher)
+        if hasattr(asyncio, 'SafeChildWatcher'):
+            watcher = asyncio.SafeChildWatcher()
+            watcher.attach_loop(self.loop)
+            asyncio.set_child_watcher(watcher)
 
     def tearDown(self):
-        asyncio.set_child_watcher(None)
+        if hasattr(asyncio, 'SafeChildWatcher'):
+            asyncio.set_child_watcher(None)
         super().tearDown()
 
     def new_loop(self):
