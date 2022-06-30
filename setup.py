@@ -57,6 +57,7 @@ EXTRA_DEPENDENCIES = {
 MACHINE = platform.machine()
 CFLAGS = ['-O2']
 _ROOT = pathlib.Path(__file__).parent
+LIBUV_SRC_DIR = str(_ROOT / 'uvloop')
 LIBUV_DIR = str(_ROOT / 'vendor' / 'libuv')
 LIBUV_BUILD_DIR = str(_ROOT / 'build' / 'libuv-{}'.format(MACHINE))
 
@@ -89,16 +90,26 @@ def _libuv_autogen(env):
 
 def _libuv_cmake(env):
     if os.path.exists(os.path.join(LIBUV_BUILD_DIR, 'uv.vcxproj')):
-        # No need to use build project.
+        # No need to build project.
         return
 
-    if not os.path.exists(os.path.join(LIBUV_BUILD_DIR, 'CMakeLists.txt')):
+    if not os.path.exists(os.path.join(LIBUV_DIR, 'CMakeLists.txt')):
         raise RuntimeError(
             'the libuv submodule has not been checked out; '
             'try running "git submodule init; git submodule update"')
 
+    cmd = ['cmake', '.', "-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE", "-DBUILD_SHARED_LIBS=TRUE"]
+    print(cmd)
     subprocess.run(
-        ['cmake', '.'], cwd=LIBUV_BUILD_DIR, env=env, check=True)
+        cmd, cwd=LIBUV_BUILD_DIR, env=env, check=True)
+
+
+def _libuv_copy_tree():
+    # Copy the libuv tree to build/ so that its build
+    # products don't pollute sdist accidentally.
+    if os.path.exists(LIBUV_BUILD_DIR):
+        shutil.rmtree(LIBUV_BUILD_DIR)
+    shutil.copytree(LIBUV_DIR, LIBUV_BUILD_DIR)
 
 
 class uvloop_sdist(sdist):
@@ -211,20 +222,15 @@ class uvloop_build_ext(build_ext):
     def build_libuv(self):
         env = _libuv_build_env()
 
-        if sys.platform != "win32":
+        if sys.platform == "win32":
+            _libuv_copy_tree()
+            _libuv_cmake(env)
+        else:
             # Make sure configure and friends are present in case
             # we are building from a git checkout.
             _libuv_autogen(env)
-
-            # Copy the libuv tree to build/ so that its build
-            # products don't pollute sdist accidentally.
-            if os.path.exists(LIBUV_BUILD_DIR):
-                shutil.rmtree(LIBUV_BUILD_DIR)
-            shutil.copytree(LIBUV_DIR, LIBUV_BUILD_DIR)
-        # TODO: Cmake win configure path
-        
-        _libuv_cmake(env)
-        # TODO: Is needed for windows?
+            _libuv_copy_tree()
+            
         if sys.platform != "win32":
             # Sometimes pip fails to preserve the timestamps correctly,
             # in which case, make will try to run autotools again.
@@ -243,17 +249,14 @@ class uvloop_build_ext(build_ext):
 
         j_flag = '-j{}'.format(os.cpu_count() or 1)
         c_flag = "CFLAGS={}".format(env['CFLAGS'])
-        args = []
         if sys.platform == "win32":
             cwd = LIBUV_BUILD_DIR
             # TODO: cflags?
-            args.extend(["cmake", "--build", ".", "--config", "Release", j_flag])
+            cmd =["cmake", "--build", ".", "--config", "Release", j_flag]
         else:
             cwd = LIBUV_BUILD_DIR
-            args.extend(["make", j_flag, c_flag])
-        # subprocess.run(
-        #     args,
-        #     cwd=cwd, env=env, check=True)
+            cmd = ["make", j_flag, c_flag]
+        subprocess.run(cmd, cwd=cwd, env=env, check=True)
 
     def build_extensions(self):
         if self.use_system_libuv:
@@ -272,6 +275,10 @@ class uvloop_build_ext(build_ext):
                 self.build_libuv()
             if not os.path.exists(libuv_lib):
                 raise RuntimeError('failed to build libuv')
+
+            if sys.platform == "win32" and "--inplace" in sys.argv:
+                # Copy Shared Lib to src dir
+                shutil.copyfile(os.path.join(LIBUV_BUILD_DIR, 'Release', 'uv.dll'), os.path.join(LIBUV_SRC_DIR, 'uv.dll'))
 
             self.extensions[-1].extra_objects.extend([libuv_lib])
             self.compiler.add_include_dir(os.path.join(LIBUV_DIR, 'include'))
