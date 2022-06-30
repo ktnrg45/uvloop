@@ -44,7 +44,11 @@ cdef aio_isfuture = getattr(asyncio, 'isfuture', None)
 cdef aio_get_running_loop = getattr(asyncio, '_get_running_loop', None)
 cdef aio_set_running_loop = getattr(asyncio, '_set_running_loop', None)
 cdef aio_debug_wrapper = getattr(asyncio.coroutines, 'debug_wrapper', None)
-cdef aio_AbstractChildWatcher = asyncio.AbstractChildWatcher
+IF UNAME_SYSNAME == "Windows":
+    # TODO: Better way to fix this?
+    cdef aio_AbstractChildWatcher = object
+ELSE:
+    cdef aio_AbstractChildWatcher = asyncio.AbstractChildWatcher
 cdef aio_Transport = asyncio.Transport
 cdef aio_FlowControlMixin = asyncio.transports._FlowControlMixin
 
@@ -145,7 +149,10 @@ cdef subprocess_SubprocessError = subprocess.SubprocessError
 
 cdef int signal_NSIG = signal.NSIG
 cdef signal_signal = signal.signal
-cdef signal_siginterrupt = signal.siginterrupt
+IF UNAME_SYSNAME == "Windows":
+    cdef signal_siginterrupt = object
+ELSE:
+    cdef signal_siginterrupt = signal.siginterrupt
 cdef signal_set_wakeup_fd = signal.set_wakeup_fd
 cdef signal_default_int_handler = signal.default_int_handler
 cdef signal_SIG_DFL = signal.SIG_DFL
