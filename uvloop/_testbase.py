@@ -324,7 +324,11 @@ class AIOTestCase(BaseTestCase):
         super().tearDown()
 
     def new_loop(self):
-        return asyncio.new_event_loop()
+        if hasattr(asyncio, 'ProactorEventLoop'):
+            # On Windows try to use IOCP event loop.
+            return asyncio.ProactorEventLoop()
+        else:
+            return asyncio.new_event_loop()
 
     def new_policy(self):
         return asyncio.DefaultEventLoopPolicy()

@@ -148,7 +148,7 @@ class _TestUDP:
                 self.transport.sendto(b'resp:' + data, addr)
 
         coro = self.loop.create_datagram_endpoint(
-            TestMyDatagramProto, local_addr=None, family=socket.AF_INET6)
+            TestMyDatagramProto, local_addr=('::1', 0), family=socket.AF_INET6)
         s_transport = None
         try:
             s_transport, server = self.loop.run_until_complete(coro)
@@ -185,6 +185,7 @@ class _TestUDP:
             tr.close()
             self.loop.run_until_complete(pr.done)
 
+    @unittest.skipUnless(sys.platform != "win32", "Windows does not have AF_UNIX socket")
     def test_create_datagram_endpoint_sock_unix_domain(self):
 
         class Proto(asyncio.DatagramProtocol):
@@ -275,6 +276,7 @@ class _TestUDP:
 
         self.loop.run_until_complete(run())
 
+    @unittest.skipIf(sys.platform == "win32", "Windows socketpair does not support SOCK_DGRAM")
     def test_socketpair(self):
         peername = asyncio.Future(loop=self.loop)
 
