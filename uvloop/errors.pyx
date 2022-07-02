@@ -54,8 +54,11 @@ cdef __convert_python_error(int uverr):
         #      Implementation detail: on Unix error codes are the
         #      negated errno (or -errno), while on Windows they
         #      are defined by libuv to arbitrary negative numbers.
+
+        if exc == OSError:
+            # Use default OSError
+            return exc(oserr,  __strerr(oserr))
         errname = uv.uv_err_name(uverr).decode()
-        err = getattr(errname, "errno", uverr)
         return exc(uverr, "%s: %s" % (errname, uv.uv_strerror(uverr).decode()))
     ELSE:
         return exc(oserr, __strerr(oserr))

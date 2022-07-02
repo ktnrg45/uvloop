@@ -41,7 +41,6 @@ cdef class UVBaseTransport(UVSocketHandle):
         # Overload UVHandle._fatal_error
 
         self._force_close(exc)
-
         if not isinstance(exc, OSError):
 
             if throw or self._loop is None:
