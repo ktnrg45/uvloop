@@ -1,6 +1,7 @@
 import asyncio
 import socket
 import unittest
+import sys
 
 from uvloop import _testbase as tb
 
@@ -19,7 +20,11 @@ class BaseTestDNS:
                 self.loop.getaddrinfo(*args, **kwargs))
         except socket.gaierror as ex:
             if err is not None:
-                self.assertEqual(ex.args, err.args)
+                if sys.platform == "win32":
+                    # Windows has different exception messages
+                    self.assertEqual(ex.args[0], err.args[0])
+                else:
+                    self.assertEqual(ex.args, err.args)
             else:
                 ex.__context__ = err
                 raise ex
@@ -47,7 +52,11 @@ class BaseTestDNS:
                 if ex.__class__ is not err.__class__:
                     print(ex, err)
                 self.assertIs(ex.__class__, err.__class__)
-                self.assertEqual(ex.args, err.args)
+                if sys.platform == "win32":
+                    # Windows has different exception messages
+                    self.assertEqual(ex.args[0], err.args[0])
+                else:
+                    self.assertEqual(ex.args, err.args)
             else:
                 raise
         else:

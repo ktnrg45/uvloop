@@ -187,12 +187,14 @@ cdef __static_getaddrinfo(object host, object port,
     if proto not in {0, uv.IPPROTO_TCP, uv.IPPROTO_UDP}:
         return
 
-    if _is_sock_stream(type):
-        proto = uv.IPPROTO_TCP
-    elif _is_sock_dgram(type):
-        proto = uv.IPPROTO_UDP
-    else:
-        return
+    # On Windows, proto is not overridden if type is specified
+    if not (system.PLATFORM_IS_WINDOWS and type != 0 and proto == 0):
+        if _is_sock_stream(type):
+            proto = uv.IPPROTO_TCP
+        elif _is_sock_dgram(type):
+            proto = uv.IPPROTO_UDP
+        else:
+            return
 
     try:
         port = __port_to_int(port, proto)
