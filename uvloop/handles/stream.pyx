@@ -350,6 +350,10 @@ cdef class UVStream(UVBaseTransport):
             int saved_errno
             int fd
 
+        if system.PLATFORM_IS_WINDOWS:
+            # Don't need this optimization on windows.
+            raise NotImplementedError
+
         if (<uv.uv_stream_t*>self._handle).write_queue_size != 0:
             raise RuntimeError(
                 'UVStream._try_write called with data in uv buffers')
@@ -453,6 +457,7 @@ cdef class UVStream(UVBaseTransport):
             int err
             int buf_len
             _StreamWriteContext ctx = None
+            int skip_try = 0
 
         if self._closed:
             # If the handle is closed, just return, it's too
@@ -463,7 +468,10 @@ cdef class UVStream(UVBaseTransport):
         if not buf_len:
             return
 
-        if (<uv.uv_stream_t*>self._handle).write_queue_size == 0:
+        if system.PLATFORM_IS_WINDOWS:
+            skip_try = 1
+
+        if not skip_try and (<uv.uv_stream_t*>self._handle).write_queue_size == 0:
             # libuv internal write buffers for this stream are empty.
             if buf_len == 1:
                 # If we only have one piece of data to send, let's
