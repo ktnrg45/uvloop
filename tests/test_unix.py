@@ -371,6 +371,7 @@ class _TestUnix:
                     lambda: None, path='/tmp/a', ssl_handshake_timeout=10))
 
 
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "No unix sockets")
 class Test_UV_Unix(_TestUnix, tb.UVTestCase):
 
     @unittest.skipUnless(hasattr(os, 'fspath'), 'no os.fspath()')
@@ -495,10 +496,12 @@ class Test_UV_Unix(_TestUnix, tb.UVTestCase):
         self.assertEqual(recvd, b'a' * (SIZE + 1))
 
 
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "No unix sockets")
 class Test_AIO_Unix(_TestUnix, tb.AIOTestCase):
     pass
 
 
+@unittest.skipUnless(hasattr(socket, "AF_UNIX"), "No unix sockets")
 class _TestSSL(tb.SSLTestCase):
 
     ONLYCERT = tb._cert_fullname(__file__, 'ssl_cert.pem')

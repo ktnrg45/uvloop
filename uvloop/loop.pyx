@@ -2108,6 +2108,8 @@ cdef class Loop:
         will wait for completion of the SSL shutdown before aborting the
         connection. Default is 30s.
         """
+        if not hasattr(socket, "AF_UNIX"):
+            raise NotImplementedError("UNIX Sockets not available")
         cdef:
             UnixServer pipe
             Server server = Server(self)
@@ -2211,7 +2213,8 @@ cdef class Loop:
                                      server_hostname=None,
                                      ssl_handshake_timeout=None,
                                      ssl_shutdown_timeout=None):
-
+        if not hasattr(socket, "AF_UNIX"):
+            raise NotImplementedError("UNIX Sockets not available")
         cdef:
             UnixTransport tr
             object app_protocol
