@@ -79,8 +79,12 @@ class _TestTCP:
                 sock = tr.get_extra_info('socket')
                 self.assertTrue(
                     sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY))
-
             await writer.drain()
+
+            # Windows raises ConnectionResetError if we close the write stream while the client is reading
+            # Wait for client to acknowledge
+            data = await reader.readexactly(2)
+            self.assertEqual(data, b'OK')
             writer.close()
 
             CNT += 1
@@ -104,6 +108,8 @@ class _TestTCP:
                 while len(buf) != 4:
                     buf += await self.loop.sock_recv(sock, 1)
                 self.assertEqual(buf, b'SPAM')
+
+                await self.loop.sock_sendall(sock, b'OK')
 
             self.assertEqual(sock.fileno(), -1)
             self.assertEqual(sock._io_refs, 0)
@@ -219,10 +225,17 @@ class _TestTCP:
 
         with sock:
             addr = sock.getsockname()
-
-            with self.assertRaisesRegex(OSError,
-                                        r"error while attempting.*\('127.*: "
-                                        r"address already in use"):
+            if sys.platform == "win32":
+                err_msg = (
+                    r".*error while attempting to bind on address.*\('127.*: "
+                    r"only one usage of each socket address.* is normally permitted"
+                )
+            else:
+                err_msg = (
+                    r"error while attempting.*\('127.*: "
+                    r"address already in use"
+                )
+            with self.assertRaisesRegex(OSError, err_msg):
 
                 self.loop.run_until_complete(
                     self.loop.create_server(object, *addr))
@@ -518,7 +531,7 @@ class _TestTCP:
             await self.wait_closed(writer)
 
         async def runner():
-            with self.assertRaisesRegex(OSError, 'Bad file'):
+            with self.assertRaisesRegex(OSError, '(Bad file|WinError 10038)'):
                 await client()
 
         self.loop.run_until_complete(runner())
